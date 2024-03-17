@@ -4,12 +4,13 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, List, Optional, Sequence, Type, Union
 
 import torch
+import torch.nn as nn
 import torchvision
 from PIL import Image, ImageFilter, ImageOps
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import Dataset, Subset
 from torchvision import transforms
-from torchvision.datasets import STL10, ImageFolder
+from torchvision.datasets import STL10, ImageFolder, MNIST
 
 
 def split_dataset(
@@ -295,6 +296,69 @@ class ImagenetTransform(BaseTransform):
             ]
         )
 
+class channel_mul_transform(nn.Module):
+    
+    def forward(image_tensor):
+        
+        final = torch.cat([final, final, final], dim = 0)
+    
+        return final      
+
+class MNISTTransform(BaseTransform):
+    def __init__(
+        self,
+        brightness: float,
+        contrast: float,
+        saturation: float,
+        hue: float,
+        gaussian_prob: float = 0.5,
+        solarization_prob: float = 0.0,
+        min_scale: float = 0.08,
+        size: int = 28,
+        mean: Sequence[float] = (0.485, 0.456, 0.406),
+        std: Sequence[float] = (0.228, 0.224, 0.225),
+    ):
+        """Class that applies Custom transformations.
+        If you want to do exoteric augmentations, you can just re-write this class.
+
+        Args:
+            brightness (float): sampled uniformly in [max(0, 1 - brightness), 1 + brightness].
+            contrast (float): sampled uniformly in [max(0, 1 - contrast), 1 + contrast].
+            saturation (float): sampled uniformly in [max(0, 1 - saturation), 1 + saturation].
+            hue (float): sampled uniformly in [-hue, hue].
+            gaussian_prob (float, optional): probability of applying gaussian blur. Defaults to 0.0.
+            solarization_prob (float, optional): probability of applying solarization. Defaults
+                to 0.0.
+            min_scale (float, optional): minimum scale of the crops. Defaults to 0.08.
+            size (int, optional): size of the crop. Defaults to 224.
+            mean (Sequence[float], optional): mean values for normalization.
+                Defaults to (0.485, 0.456, 0.406).
+            std (Sequence[float], optional): std values for normalization.
+                Defaults to (0.228, 0.224, 0.225).
+        """
+
+        super().__init__()
+        self.transform = transforms.Compose(
+            [
+                transforms.RandomResizedCrop(
+                    size,
+                    scale=(min_scale, 1.0),
+                    interpolation=transforms.InterpolationMode.BICUBIC,
+                ),
+                transforms.RandomApply(
+                    [transforms.ColorJitter(brightness, contrast, saturation, hue)],
+                    p=0.8,
+                ),
+                transforms.RandomGrayscale(p=0.2),
+                transforms.RandomApply([GaussianBlur()], p=gaussian_prob),
+                transforms.RandomApply([Solarization()], p=solarization_prob),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.ToTensor(),
+                channel_mul_transform(),
+                transforms.Normalize(mean=mean, std=std),
+               
+            ]
+        )        
 
 class CustomTransform(BaseTransform):
     def __init__(
@@ -418,7 +482,23 @@ class MulticropCifarTransform(BaseTransform):
                 transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
             ]
         )
+class MulticropMNISTTransform(BaseTransform):
+    def __init__(self):
+        """Class that applies multicrop transform for CIFAR"""
 
+        super().__init__()
+
+        self.transform = transforms.Compose(
+            [
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
+                transforms.RandomGrayscale(p=0.2),
+                transforms.ToTensor(),
+                channel_mul_transform(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
+                
+            ]
+        )
 
 class MulticropSTLTransform(BaseTransform):
     def __init__(self):
@@ -532,6 +612,8 @@ def prepare_transform(dataset: str, multicrop: bool = False, **kwargs) -> Any:
 
     if dataset in ["cifar10", "cifar100"]:
         return CifarTransform(**kwargs) if not multicrop else MulticropCifarTransform()
+    elif dataset == "mnist":
+        return MNISTTransform(**kwargs) if not multicrop else MulticropMNISTTransform()
     elif dataset == "stl10":
         return STLTransform(**kwargs) if not multicrop else MulticropSTLTransform()
     elif dataset in ["imagenet", "imagenet100"]:
@@ -632,6 +714,20 @@ def prepare_datasets(
     online_eval_dataset = None
     if dataset in ["cifar10", "cifar100"]:
         DatasetClass = vars(torchvision.datasets)[dataset.upper()]
+        dataset = dataset_with_index(DatasetClass)(
+            data_dir / train_dir,
+            train=True,
+            download=True,
+            transform=task_transform,
+        )
+        online_eval_dataset = DatasetClass(
+            data_dir / train_dir,
+            train=True,
+            download=True,
+            transform=online_eval_transform,
+        )
+    elif dataset == "mnist":
+        DatasetClass = MNIST
         dataset = dataset_with_index(DatasetClass)(
             data_dir / train_dir,
             train=True,

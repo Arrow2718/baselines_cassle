@@ -5,9 +5,10 @@ from torch.utils.data.dataset import Subset
 
 import torchvision
 from torch import nn
+import torch
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
-from torchvision.datasets import STL10, ImageFolder
+from torchvision.datasets import STL10, ImageFolder, MNIST
 from cassle.utils.datasets import DomainNetDataset
 from sklearn.model_selection import train_test_split
 
@@ -38,6 +39,14 @@ def build_custom_pipeline():
     }
     return pipeline
 
+class channel_mul_transform(nn.Module):
+    
+    def forward(image_tensor):
+        
+        final = torch.cat([final, final, final], dim = 0)
+    
+        return final      
+        
 
 def prepare_transforms(dataset: str) -> Tuple[nn.Module, nn.Module]:
     """Prepares pre-defined train and test transformation pipelines for some datasets.
@@ -48,7 +57,26 @@ def prepare_transforms(dataset: str) -> Tuple[nn.Module, nn.Module]:
     Returns:
         Tuple[nn.Module, nn.Module]: training and validation transformation pipelines.
     """
-
+    mnist_pipeline = {
+        "T_train" : {
+                transforms.RandomResizedCrop(size=28, scale=(0.08, 1.0)),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                channel_mul_transform(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
+                
+            
+        },
+        "T_val" : {
+                
+                transforms.ToTensor(),
+                channel_mul_transform(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
+                
+            
+        }
+        
+    }
     cifar_pipeline = {
         "T_train": transforms.Compose(
             [
@@ -106,6 +134,7 @@ def prepare_transforms(dataset: str) -> Tuple[nn.Module, nn.Module]:
     custom_pipeline = build_custom_pipeline()
 
     pipelines = {
+        "mnist" : mnist_pipeline,
         "cifar10": cifar_pipeline,
         "cifar100": cifar_pipeline,
         "stl10": stl_pipeline,
@@ -164,6 +193,7 @@ def prepare_datasets(
         val_dir = Path(val_dir)
 
     assert dataset in [
+        "mnist",
         "cifar10",
         "cifar100",
         "stl10",
@@ -188,6 +218,19 @@ def prepare_datasets(
             download=True,
             transform=T_val,
         )
+    elif dataset == "mnist":
+        
+        train_dataset = MNIST(
+            data_dir /  train_dir,
+            train=True,
+            download=True,
+            transform= T_train)
+        
+        val_dataset = MNIST(
+            data_dir / val_dir,
+            train=False,
+            download=True,
+            transform= T_val)
 
     elif dataset == "stl10":
         train_dataset = STL10(

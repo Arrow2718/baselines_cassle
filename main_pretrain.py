@@ -46,7 +46,7 @@ def main():
     args.multiple_trainloader_mode = "min_size"
 
     # set online eval batch size and num workers
-    args.online_eval_batch_size = int(args.batch_size) if args.dataset == "cifar100" else None
+    args.online_eval_batch_size = None# int(args.batch_size) if args.dataset == "cifar100" else None
 
     # split classes into tasks
     tasks = None
@@ -76,6 +76,8 @@ def main():
 
             if args.dataset in ["cifar10", "cifar100"]:
                 size_crops = [32, 24]
+            elif args.dataset == "mnist":
+                size_crops = [28, 28]
             elif args.dataset == "stl10":
                 size_crops = [96, 58]
             # imagenet or custom dataset

@@ -2,6 +2,7 @@ import os
 from argparse import Namespace
 
 N_CLASSES_PER_DATASET = {
+    "mnist" : 10,
     "cifar10": 10,
     "cifar100": 100,
     "stl10": 10,

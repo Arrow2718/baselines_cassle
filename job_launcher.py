@@ -36,8 +36,8 @@ command_args = str_to_dict(" ".join(command).split(" ")[2:])
 
 # create experiment directory
 if args.experiment_dir is None:
-    args.experiment_dir = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    args.experiment_dir += f"-{command_args['--name']}"
+    # args.experiment_dir = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    args.experiment_dir = f"{command_args['--name']}"
 full_experiment_dir = os.path.join(args.base_experiment_dir, args.experiment_dir)
 os.makedirs(full_experiment_dir, exist_ok=True)
 print(f"Experiment directory: {full_experiment_dir}")

@@ -10,6 +10,7 @@ def dataset_args(parser: ArgumentParser):
     """
 
     SUPPORTED_DATASETS = [
+        "mnist",
         "cifar10",
         "cifar100",
         "stl10",
