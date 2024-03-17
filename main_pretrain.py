@@ -57,6 +57,7 @@ def main():
     # pretrain and online eval dataloaders
     if not args.dali:
         # asymmetric augmentations
+        # print("args.unique_augs > 1: ",args.unique_augs > 1) # True
         if args.unique_augs > 1:
             transform = [
                 prepare_transform(args.dataset, multicrop=args.multicrop, **kwargs)
@@ -70,7 +71,7 @@ def main():
         if args.debug_augmentations:
             print("Transforms:")
             pprint(transform)
-
+        # print("args.multicrop: ", args.multicrop) #False
         if args.multicrop:
             assert not args.unique_augs == 1
 
@@ -93,7 +94,8 @@ def main():
 
             online_eval_transform = transform[-1] if isinstance(transform, list) else transform
             task_transform = prepare_n_crop_transform(transform, num_crops=args.num_crops)
-
+            # print("type(online_eval_transform): ", type(online_eval_transform))
+        # print("type(task_transform): ", type(task_transform))
         train_dataset, online_eval_dataset = prepare_datasets(
             args.dataset,
             task_transform=task_transform,
@@ -102,7 +104,7 @@ def main():
             train_dir=args.train_dir,
             no_labels=args.no_labels,
         )
-
+        print("type(online_eval_dataset.transform): ", type(online_eval_dataset.transform))
         task_dataset, tasks = split_dataset(
             train_dataset,
             tasks=tasks,
@@ -110,13 +112,13 @@ def main():
             num_tasks=args.num_tasks,
             split_strategy=args.split_strategy,
         )
-
+        # print("train_dataset.transform: ", train_dataset.transform)
         task_loader = prepare_dataloader(
             task_dataset,
             batch_size=args.batch_size,
             num_workers=args.num_workers,
         )
-
+     
         train_loaders = {f"task{args.task_idx}": task_loader}
 
         if args.online_eval_batch_size:

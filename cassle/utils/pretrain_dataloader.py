@@ -20,7 +20,9 @@ def split_dataset(
         assert len(dataset.classes) == sum([len(t) for t in tasks])
         mask = [(c in tasks[task_idx]) for c in dataset.targets]
         indexes = torch.tensor(mask).nonzero()
+        # print("dataset.transform: ", dataset.transform)
         task_dataset = Subset(dataset, indexes)
+        print("task_dataset.dataset.transform: ", task_dataset.dataset.transform)
     elif split_strategy == "data":
         assert tasks is None
         lengths = [len(dataset) // num_tasks] * num_tasks
@@ -298,9 +300,9 @@ class ImagenetTransform(BaseTransform):
 
 class channel_mul_transform(nn.Module):
     
-    def forward(image_tensor):
+    def forward(self, image_tensor):
         
-        final = torch.cat([final, final, final], dim = 0)
+        final = torch.cat([image_tensor, image_tensor, image_tensor], dim = 0)
     
         return final      
 
@@ -341,7 +343,7 @@ class MNISTTransform(BaseTransform):
         self.transform = transforms.Compose(
             [
                 transforms.RandomResizedCrop(
-                    size,
+                    28,
                     scale=(min_scale, 1.0),
                     interpolation=transforms.InterpolationMode.BICUBIC,
                 ),
@@ -358,7 +360,8 @@ class MNISTTransform(BaseTransform):
                 transforms.Normalize(mean=mean, std=std),
                
             ]
-        )        
+        )     
+  
 
 class CustomTransform(BaseTransform):
     def __init__(
@@ -494,7 +497,7 @@ class MulticropMNISTTransform(BaseTransform):
                 transforms.RandomApply([transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)], p=0.8),
                 transforms.RandomGrayscale(p=0.2),
                 transforms.ToTensor(),
-                channel_mul_transform(),
+                # channel_mul_transform(),
                 transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
                 
             ]
@@ -613,6 +616,8 @@ def prepare_transform(dataset: str, multicrop: bool = False, **kwargs) -> Any:
     if dataset in ["cifar10", "cifar100"]:
         return CifarTransform(**kwargs) if not multicrop else MulticropCifarTransform()
     elif dataset == "mnist":
+        # print("Using MNIST transform")
+        # print("multicrop: ", multicrop)
         return MNISTTransform(**kwargs) if not multicrop else MulticropMNISTTransform()
     elif dataset == "stl10":
         return STLTransform(**kwargs) if not multicrop else MulticropSTLTransform()
@@ -710,7 +715,7 @@ def prepare_datasets(
         train_dir = Path(f"{dataset}/train")
     else:
         train_dir = Path(train_dir)
-
+    
     online_eval_dataset = None
     if dataset in ["cifar10", "cifar100"]:
         DatasetClass = vars(torchvision.datasets)[dataset.upper()]
@@ -728,6 +733,7 @@ def prepare_datasets(
         )
     elif dataset == "mnist":
         DatasetClass = MNIST
+        # print(type(task_transform))
         dataset = dataset_with_index(DatasetClass)(
             data_dir / train_dir,
             train=True,

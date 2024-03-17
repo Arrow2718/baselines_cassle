@@ -41,9 +41,9 @@ def build_custom_pipeline():
 
 class channel_mul_transform(nn.Module):
     
-    def forward(image_tensor):
+    def forward(self, image_tensor):
         
-        final = torch.cat([final, final, final], dim = 0)
+        final = torch.cat([image_tensor, image_tensor, image_tensor], dim = 0)
     
         return final      
         
@@ -58,25 +58,23 @@ def prepare_transforms(dataset: str) -> Tuple[nn.Module, nn.Module]:
         Tuple[nn.Module, nn.Module]: training and validation transformation pipelines.
     """
     mnist_pipeline = {
-        "T_train" : {
-                transforms.RandomResizedCrop(size=28, scale=(0.08, 1.0)),
+        "T_train" :transforms.Compose(
+                [transforms.RandomResizedCrop(size=28, scale=(0.08, 1.0)),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 channel_mul_transform(),
-                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
-                
-            
-        },
-        "T_val" : {
-                
-                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))])
+        ,
+        "T_val" : transforms.Compose(
+                [transforms.ToTensor(),
                 channel_mul_transform(),
-                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261))])
                 
-            
-        }
-        
     }
+            
+    
+        
+    
     cifar_pipeline = {
         "T_train": transforms.Compose(
             [
