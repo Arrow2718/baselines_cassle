@@ -83,7 +83,7 @@ def main():
                 size_crops = [96, 58]
             # imagenet or custom dataset
             else:
-                size_crops = [224, 96]
+                size_crops = [32, 24]
 
             transform = prepare_multicrop_transform(
                 transform, size_crops=size_crops, num_crops=[args.num_crops, args.num_small_crops]

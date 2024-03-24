@@ -58,7 +58,7 @@ def augmentations_args(parser: ArgumentParser):
     parser.add_argument("--min_scale", type=float, default=[0.08], nargs="+")
 
     # for imagenet or custom dataset
-    parser.add_argument("--size", type=int, default=[224], nargs="+")
+    parser.add_argument("--size", type=int, default=[64], nargs="+")
 
     # for custom dataset
     parser.add_argument("--mean", type=float, default=[0.485, 0.456, 0.406], nargs="+")

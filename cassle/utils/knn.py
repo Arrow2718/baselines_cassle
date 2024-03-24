@@ -11,7 +11,7 @@ from torchmetrics.metric import Metric
 class WeightedKNNClassifier(Metric):
     def __init__(
         self,
-        k: int = 20,
+        k: int = 50,
         T: float = 0.07,
         max_distance_matrix_size: int = int(5e6),
         distance_fx: str = "cosine",

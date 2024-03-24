@@ -22,7 +22,7 @@ def split_dataset(
         indexes = torch.tensor(mask).nonzero()
         # print("dataset.transform: ", dataset.transform)
         task_dataset = Subset(dataset, indexes)
-        print("task_dataset.dataset.transform: ", task_dataset.dataset.transform)
+        # print("task_dataset.dataset.transform: ", task_dataset.dataset.transform)
     elif split_strategy == "data":
         assert tasks is None
         lengths = [len(dataset) // num_tasks] * num_tasks
@@ -33,6 +33,8 @@ def split_dataset(
     elif split_strategy == "domain":
         assert tasks is None
         raise NotImplementedError
+    print("TRAIN LOADER: -----------------", len(dataset.classes), " classes ,", len(dataset.samples), " samples ,", \
+            len(dataset.targets), " targets ,", len(dataset.samples) / len(dataset.classes), " samples per class.")
     return task_dataset, tasks
 
 
@@ -260,7 +262,7 @@ class ImagenetTransform(BaseTransform):
         hue: float,
         gaussian_prob: float = 0.5,
         solarization_prob: float = 0.0,
-        size: int = 224,
+        size: int = 32,
         min_scale: float = 0.08,
     ):
         """Class that applies Imagenet transformations.
@@ -294,6 +296,7 @@ class ImagenetTransform(BaseTransform):
                 transforms.RandomApply([Solarization()], p=solarization_prob),
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.ToTensor(),
+                transforms.Resize(32),
                 transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.228, 0.224, 0.225)),
             ]
         )
@@ -552,6 +555,7 @@ class MulticropImagenetTransform(BaseTransform):
                 transforms.RandomApply([Solarization()], p=solarization_prob),
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.ToTensor(),
+                transforms.Resize(32),
                 transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.228, 0.224, 0.225)),
             ]
         )
@@ -757,8 +761,10 @@ def prepare_datasets(
 
     elif dataset in ["imagenet", "imagenet100"]:
         train_dir = data_dir / train_dir
+        
         dataset = dataset_with_index(ImageFolder)(train_dir, task_transform)
-
+        online_eval_dataset = ImageFolder(train_dir, task_transform)
+        
     elif dataset == "custom":
         train_dir = data_dir / train_dir
 

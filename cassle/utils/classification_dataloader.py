@@ -113,16 +113,17 @@ def prepare_transforms(dataset: str) -> Tuple[nn.Module, nn.Module]:
     imagenet_pipeline = {
         "T_train": transforms.Compose(
             [
-                transforms.RandomResizedCrop(size=224, scale=(0.08, 1.0)),
+                transforms.RandomResizedCrop(size=32, scale=(0.08, 1.0)),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
+                transforms.Resize(32),
                 transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.228, 0.224, 0.225)),
             ]
         ),
         "T_val": transforms.Compose(
             [
-                transforms.Resize(256),  # resize shorter
-                transforms.CenterCrop(224),  # take center crop
+                transforms.Resize(32),  # resize shorter
+                transforms.CenterCrop(32),  # take center crop
                 transforms.ToTensor(),
                 transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.228, 0.224, 0.225)),
             ]
@@ -249,7 +250,12 @@ def prepare_datasets(
         val_dir = data_dir / val_dir
 
         train_dataset = ImageFolder(train_dir, T_train)
+        
+
+        
         val_dataset = ImageFolder(val_dir, T_val)
+        
+    
 
     elif dataset == "domainnet":
         train_dataset = DomainNetDataset(
@@ -349,7 +355,10 @@ def prepare_data(
             random_state=42,
         )[0]
         train_dataset = Subset(train_dataset, idxs)
-
+    
+    print("VAL LOADER: -----------------", len(val_dataset.classes), ", classes ", len(val_dataset.samples), ", samples ", \
+            len(val_dataset.targets), ", targets ", len(val_dataset.samples) / len(val_dataset.classes), ", samples per class")
+    
     train_loader, val_loader = prepare_dataloaders(
         train_dataset,
         val_dataset,
