@@ -2,14 +2,14 @@ from tqdm import tqdm
 import torch.nn.functional as F 
 import torch
 import numpy as np
-from utils.metrics import mask_classes
+
 
 # code copied from https://colab.research.google.com/github/facebookresearch/moco/blob/colab-notebook/colab/moco_cifar10_demo.ipynb#scrollTo=RI1Y8bSImD7N
 # test using a knn monitor
 
 def knn_monitor(args,net, memory_data_loader, test_data_loader, device, cl_default, task_id, k=200, t=0.1, hide_progress=False):
     net.eval()
-    classes = args.n_classes_per_task * args.n_tasks
+    classes = args.num_classes
 
     #classes = 100
     total_top1 =  0.0
@@ -19,7 +19,7 @@ def knn_monitor(args,net, memory_data_loader, test_data_loader, device, cl_defau
         # generate feature bank
         for data, target in tqdm(memory_data_loader, desc='Feature extracting', leave=False, disable=True):
             if cl_default:
-                feature = net(data.cuda(non_blocking=True), return_features=True)
+                feature = net(data.cuda(non_blocking=True))
             else:
                 feature = net(data.cuda(non_blocking=True))
             feature = F.normalize(feature, dim=1)
@@ -29,21 +29,23 @@ def knn_monitor(args,net, memory_data_loader, test_data_loader, device, cl_defau
         # [N]
         # feature_labels = torch.tensor(memory_data_loader.dataset.targets - np.amin(memory_data_loader.dataset.targets), device=feature_bank.device)
         feature_labels = torch.tensor(memory_data_loader.dataset.targets, device=feature_bank.device)
+        # print(feature_labels.size())
         # loop test data to predict the label by weighted knn search
         test_bar = tqdm(test_data_loader, desc='kNN', disable=True)
         for data, target in test_bar:
-            print(data.shape)
+            print(data.size())
             data, target = data.cuda(non_blocking=True), target.cuda(non_blocking=True)
             if cl_default:
-                feature = net(data, return_features=True)
+                feature = net(data)
             else:
                 feature = net(data)
             feature = F.normalize(feature, dim=1)
             
             pred_scores = knn_predict(feature, feature_bank, feature_labels, classes, k, t)
-
+            
             total_num += data.shape[0]
             _, preds = torch.max(pred_scores.data, 1)
+            
             total_top1 += torch.sum(preds == target).item()
             
             
