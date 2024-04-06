@@ -53,6 +53,7 @@ def main():
     if args.split_strategy == "class":
         assert args.num_classes % args.num_tasks == 0
         tasks = torch.randperm(args.num_classes).chunk(args.num_tasks)
+        print(tasks)
 
     # pretrain and online eval dataloaders
     if not args.dali:

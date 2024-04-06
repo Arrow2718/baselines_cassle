@@ -7,12 +7,13 @@ from utils.metrics import mask_classes
 # code copied from https://colab.research.google.com/github/facebookresearch/moco/blob/colab-notebook/colab/moco_cifar10_demo.ipynb#scrollTo=RI1Y8bSImD7N
 # test using a knn monitor
 
-def knn_monitor(args,net, dataset, memory_data_loader, test_data_loader, device, cl_default, task_id, k=200, t=0.1, hide_progress=False):
+def knn_monitor(args,net, memory_data_loader, test_data_loader, device, cl_default, task_id, k=200, t=0.1, hide_progress=False):
     net.eval()
     classes = args.n_classes_per_task * args.n_tasks
 
     #classes = 100
-    total_top1 = total_top1_mask = total_top5 = total_num = 0.0
+    total_top1 =  0.0
+    total_num = 0.0
     feature_bank = []
     with torch.no_grad():
         # generate feature bank
@@ -45,11 +46,9 @@ def knn_monitor(args,net, dataset, memory_data_loader, test_data_loader, device,
             _, preds = torch.max(pred_scores.data, 1)
             total_top1 += torch.sum(preds == target).item()
             
-            pred_scores = mask_classes(args,pred_scores, dataset, task_id)
-            _, preds = torch.max(pred_scores.data, 1)
-            total_top1_mask += torch.sum(preds == target).item()
+            
 
-    return total_top1 / total_num * 100, total_top1_mask / total_num * 100
+    return total_top1 / total_num * 100
 
 
 # knn monitor as in InstDisc https://arxiv.org/abs/1805.01978
